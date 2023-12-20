@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
 class ChatPage extends StatefulWidget {
-  const ChatPage({Key? key}) : super(key: key);
+  String name, profileurl, username;
+  ChatPage ({required this.name, required this.profileurl, required this.username});
 
   @override
   State<ChatPage> createState() => _ChatPageState();

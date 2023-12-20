@@ -1,5 +1,6 @@
 import 'package:chat_app/pages/chatpage.dart';
 import 'package:chat_app/service/database.dart';
+import 'package:chat_app/service/shared_pref.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
@@ -12,6 +13,35 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> {
   bool search = false;
+  String? myName, myProfilePic, myUserName, myEmail;
+
+  getthesharedpref() async {
+    myName = await SharedPreferenceHelper().getUserDispalyName();
+    myProfilePic = await SharedPreferenceHelper().getUserPic();
+    myUserName = await SharedPreferenceHelper().getUserName();
+    myEmail = await SharedPreferenceHelper().getUserEmail();
+    setState(() {});
+  }
+
+  ontheload() async {
+    await getthesharedpref();
+    setState(() {});
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    ontheload();
+  }
+
+  getChatRoomIdbyUser(String a, String b) {
+    if (a.substring(0, 1).codeUnitAt(0) > b.substring(0, 1).codeUnitAt(0)) {
+      return "$b\_$a";
+    } else {
+      return "$a\_$b";
+    }
+  }
+
   var queryResultSet = [];
   var tempSearchStore = [];
 
@@ -93,10 +123,20 @@ class _HomeState extends State<Home> {
                           decoration: BoxDecoration(
                               color: Color(0xff3a2144),
                               borderRadius: BorderRadius.circular(20)),
-                          child: Icon(
-                            Icons.search,
-                            color: Color(0xffc199cd),
-                          )),
+                          child: search
+                              ? GestureDetector(
+                                  onTap: () {
+                                    search = false;
+                                    setState(() {});
+                                  },
+                                  child: Icon(
+                                    Icons.close,
+                                    color: Color(0xffc199cd),
+                                  ))
+                              : Icon(
+                                  Icons.search,
+                                  color: Color(0xffc199cd),
+                                )),
                     ),
                   ],
                 ),
@@ -126,12 +166,7 @@ class _HomeState extends State<Home> {
                         : Column(
                             children: [
                               GestureDetector(
-                                onTap: () {
-                                  Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                          builder: (context) => ChatPage()));
-                                },
+                                onTap: () {},
                                 child: Row(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
@@ -355,39 +390,68 @@ class _HomeState extends State<Home> {
   }
 
   Widget buildResultCard(data) {
-    return Container(
-        margin: EdgeInsets.symmetric(vertical: 8),
-        child: Material(
-          borderRadius: BorderRadius.circular(10),
-          child: Container(
-            padding: EdgeInsets.all(18.0),
-            decoration: BoxDecoration(
-                color: Colors.white, borderRadius: BorderRadius.circular(10)),
-            child: Row(
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      data["Name"],
-                      style: TextStyle(
-                          color: Colors.black,
-                          fontSize: 18.0,
-                          fontWeight: FontWeight.bold),
+    return GestureDetector(
+      onTap: () async {
+        search = false;
+        setState(() {});
+        var chatRoomId = getChatRoomIdbyUser(myUserName!, data["username"]);
+        Map<String, dynamic> chatRoomInfoMap = {
+          "user": [myUserName, data["username"]],
+        };
+        await DatabaseMethods().creatChatRoom(chatRoomId, chatRoomInfoMap);
+        Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (context) => ChatPage(
+                      name: data["Name"],
+                      profileurl: data["Photo"],
+                      username: data["username"],
+                    )));
+      },
+      child: Container(
+          margin: EdgeInsets.symmetric(vertical: 8),
+          child: Material(
+            borderRadius: BorderRadius.circular(10),
+            child: Container(
+              padding: EdgeInsets.all(18.0),
+              decoration: BoxDecoration(
+                  color: Colors.white, borderRadius: BorderRadius.circular(10)),
+              child: Row(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(60),
+                    child: Image.asset(
+                      (data["Photo"]),
+                      height: 70,
+                      width: 70,
+                      fit: BoxFit.cover,
                     ),
-                    SizedBox(height: 10.0),
-                    Text(
-                      "username",
-                      style: TextStyle(
-                          color: Colors.black,
-                          fontSize: 18.0,
-                          fontWeight: FontWeight.bold),
-                    )
-                  ],
-                )
-              ],
+                  ),
+                  SizedBox(height: 20.0),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        data["Name"],
+                        style: TextStyle(
+                            color: Colors.black,
+                            fontSize: 18.0,
+                            fontWeight: FontWeight.bold),
+                      ),
+                      SizedBox(height: 8.0),
+                      Text(
+                        "username",
+                        style: TextStyle(
+                            color: Colors.black,
+                            fontSize: 15.0,
+                            fontWeight: FontWeight.w500),
+                      )
+                    ],
+                  )
+                ],
+              ),
             ),
-          ),
-        ));
+          )),
+    );
   }
 }
