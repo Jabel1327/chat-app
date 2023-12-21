@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 class DatabaseMethods {
   Future addUserDetails(Map<String, dynamic> userInfoMap, String id) async {
@@ -18,7 +19,7 @@ class DatabaseMethods {
   Future<QuerySnapshot> Search(String username) async {
     return await FirebaseFirestore.instance
         .collection("user")
-        .where("searchKey", isEqualTo: username.substring(0, 1).toUpperCase())
+        .where("username", isEqualTo: username.toLowerCase())
         .get();
   }
 
